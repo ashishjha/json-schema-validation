@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:xml-module="http://www.mulesoft.org/schema/mule/xml-module" xmlns:json="http://www.mulesoft.org/schema/mule/json"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/xml-module http://www.mulesoft.org/schema/mule/xml-module/current/mule-xml-module.xsd">
+	<flow name="json-validation-flow" doc:id="6ca46957-28cd-4c56-ab61-f39845dc8b38" >
+		<http:listener doc:name="HTTP: POST/json" doc:id="feb83162-3480-447d-9de6-193cf8f3114e" config-ref="HTTP_Listener_config" path="/json">
+			<http:response statusCode="#[vars.httpStatus]" />
+			<http:error-response statusCode="#[vars.httpStatus]" >
+				<http:body ><![CDATA[#[payload]]]></http:body>
+			</http:error-response>
+		</http:listener>
+		<json:validate-schema doc:name="Validate schema" doc:id="17b80c6c-f5e9-4b4e-832b-28540a9d92a8" schema="schemas/json-schema.json"/>
+		<ee:transform doc:name="payload" doc:id="5753a9b1-eb11-47d0-8519-0e2cc0a087b2" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"validation": "Success",
+	"message": "Valid JSON schema"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<set-variable value="#[200 as Number]" doc:name="httpStatus" doc:id="c012d6ab-7523-4d43-bc8f-a34d9b90abc7" variableName="httpStatus"/>
+		<logger level="INFO" doc:name="Logger" doc:id="76583c9f-523b-41de-978e-1ea84ff3db26" message="#[payload]"/>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="7f5da644-5362-4567-969b-96c19c874f22" type="JSON:SCHEMA_NOT_HONOURED">
+				<set-variable value="#[400 as Number]" doc:name="httpStatus" doc:id="f17c3370-ffe0-400b-a4f9-5d97e4d95726" variableName="httpStatus" />
+				<ee:transform doc:name="payload" doc:id="e569b5e6-67c1-46fe-86c9-1ad554fc76ea" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"validation": "failure",
+	"message": "Invalid JSON schema"
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+	<flow name="xml-validation-flow" doc:id="c9ff567e-1a0e-4df3-a047-0fe00766d45b" >
+		<http:listener doc:name="HTTP: POST/xml" doc:id="eba81b0b-2fef-41b8-9f70-0e5dc0cbf28a" config-ref="HTTP_Listener_config" path="/xml">
+			<http:response statusCode="#[vars.httpStatus]" />
+			<http:error-response statusCode="#[vars.httpStatus]" >
+				<http:body ><![CDATA[#[payload]]]></http:body>
+			</http:error-response>
+		</http:listener>
+		<xml-module:validate-schema doc:name="Validate schema" doc:id="218313e3-44ae-4e6e-9e0c-5cce157d7516" schemas="schemas/xml-schema.xsd"/>
+		<ee:transform doc:name="payload" doc:id="10325f6c-fc79-4a00-a6ed-1c62c5624656" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"validation": "Success",
+	"message": "Valid XML schema"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<set-variable value="#[200 as Number]" doc:name="httpStatus" doc:id="d4255be1-ac9a-409e-bcd3-fdf939f0f1c4" variableName="httpStatus" />
+		<logger level="INFO" doc:name="Logger" doc:id="28faf728-398e-4ff7-a8d1-b3194a55f1ac" message="#[payload]" />
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="1621b6e4-19bc-453e-8916-3d4cbb90bb67" type="XML-MODULE:SCHEMA_NOT_HONOURED">
+				<set-variable value="#[400 as Number]" doc:name="httpStatus" doc:id="5f470e0d-1227-4ba3-89dc-016c79668148" variableName="httpStatus" />
+				<ee:transform doc:name="payload" doc:id="ec0c30ba-11f4-4676-b81a-fdffffd75326" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"validation": "failure",
+	"message": "Invalid XML schema"
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+</mule>
